@@ -16,12 +16,19 @@
 
 package com.example.android.mediarecorder;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+
 import android.util.Log;
 import android.view.TextureView;
 import android.view.View;
@@ -48,7 +55,21 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean isRecording = false;
     private static final String TAG = "Recorder";
+    private static final int PERMISSION_REQUEST_CODE = 1001;
     private Button captureButton;
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            boolean isAllPermissionsGranted = true;
+            for (int result : grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    isAllPermissionsGranted = false;
+                }
+            }
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,6 +78,8 @@ public class MainActivity extends AppCompatActivity {
 
         mPreview = findViewById(R.id.surface_view);
         captureButton = findViewById(R.id.button_capture);
+
+        requestPermissions();
     }
 
     /**
@@ -112,6 +135,28 @@ public class MainActivity extends AppCompatActivity {
         releaseMediaRecorder();
         // release the camera immediately on pause event
         releaseCamera();
+    }
+
+    private void requestPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            int writeExternalStorage = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            int readExternalStorage = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE);
+            int recordAudio = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO);
+            int camera = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA);
+
+            if (writeExternalStorage != PackageManager.PERMISSION_GRANTED ||
+                    readExternalStorage != PackageManager.PERMISSION_GRANTED ||
+                    recordAudio != PackageManager.PERMISSION_GRANTED ||
+                    camera != PackageManager.PERMISSION_GRANTED) {
+                String[] permissions = new String[] {
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                        Manifest.permission.READ_EXTERNAL_STORAGE,
+                        Manifest.permission.RECORD_AUDIO,
+                        Manifest.permission.CAMERA
+                };
+                requestPermissions(permissions, PERMISSION_REQUEST_CODE);
+            }
+        }
     }
 
     private void releaseMediaRecorder() {
